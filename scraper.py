@@ -1,6 +1,6 @@
 
 
-import firebase_admin
+#import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 import requests
@@ -24,7 +24,7 @@ db = firestore.client()
 
 iforstingnumber=1
 
-# starting data mining from web
+# starting data mining from web for first time
 while True:
 
 	my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/honda/sell/'
