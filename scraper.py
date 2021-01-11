@@ -1,7 +1,8 @@
 
 ### this is file with mysql database
 ### 
-#  #import firebase_admin
+import firebase_admin
+import mysql.connector
 from firebase_admin import credentials
 from firebase_admin import firestore
 import requests
@@ -12,14 +13,16 @@ import datetime
 from datetime import *
 
 import time 
+
+mydb = mysql.connector.connect(
+			host="127.0.0.2",
+			user="root",
+			password="Lazanjavirs1",
+			database="testschema"
+			)
 print(Fore.YELLOW + "Starting your application For data" + Style.RESET_ALL)
 
 
-# Use a service account
-cred = credentials.Certificate('./service_account_key.json')
-firebase_admin.initialize_app(cred)
-
-db = firestore.client()
 
 
 
@@ -69,33 +72,32 @@ while True:
 			page_soup2 = soup(page2_html, "html.parser")
 			
 			headLink = page_soup2.find('script',{'id':'contacts_js'})
-			#print("statslink: /n")
+			#print(f"statslink: {headLink} /n")
 
 #'seit ir veiktas kautkadas izaminas datubazee no kuras iegust informacioju'
 			statsLink = f'https://www.ss.com{str(headLink["src"])}'
-			#print(statsLink)
+			#print(f"clean stats link: {statsLink} /n")
 			cookies = dict(sid='000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
 			r = requests.get(statsLink, cookies=cookies)
 			counterLink1 = r.text
 
 
 			#print(Fore.CYAN + f'counterlink {counterLink1}'+ Style.RESET_ALL)
-			counterLink1 = counterLink1.replace('ADS_STAT=[-1,-1,-1,-1,','')
-			counterLink1 = counterLink1.replace('ADS_STAT=[0,0,0,0,','')
-			counterLink1 = counterLink1.replace('];','')
-			counterLink1 = counterLink1.replace('=";open_stat_lnk( \'lv\' );PH_c = "_show_phone(0);";eval(PH_c)','')
 			
+			counterList_2 = counterLink1.split(";")	
+			counter_for_link = counterLink1.index(';')
+			#print(f"counter is: {counter_for_link}")
+			counterLink1 = counterLink1[ :counter_for_link]
+			counterList = counterLink1.split(",")
+			counterName = counterList[4]
+			counterNumber = int(counterName[0:-1])
+			counter_name_2 = counterList_2[1]
+			counter_name_2 = counter_name_2.replace('\r\n','')
+			counter_name_2 = counter_name_2.replace('OPEN_STAT_LNK="','')
+			counter_name_2 = counter_name_2.replace('="','')
+			uniqueNumber = counter_name_2
+			#print(Fore.GREEN + f'counter_name_2 {counter_name_2}'+ Style.RESET_ALL)
 
-			counterLink1 = counterLink1.strip()
-			uniqueNumber = counterLink1[::-1]
-			uniqueNumber = uniqueNumber[0:11:]
-			uniqueNumber = uniqueNumber[::-1]
-			print(Fore.CYAN + f'counterlink1 {uniqueNumber}'+ Style.RESET_ALL)
-			counterLink1 = counterLink1.replace(uniqueNumber,'')
-			counterLink1 = counterLink1.replace('OPEN_STAT_LNK="','')
-			counterLink1 = counterLink1.strip()
-			counterLink1 = int(counterLink1)
-			print(counterLink1)
 
 
 			bildesLinksHTML = page_soup2.findAll("div", {"class": "pic_dv_thumbnail"})
@@ -112,7 +114,7 @@ while True:
 			ievietosanasDatums = ievietosanasDatums.strip().replace('Datums: ','')
 
 			ievietosanasDatums = ievietosanasDatums[0:10]
-			
+			print(ievietosanasDatums)
 
 			specifics = page_soup2.find("div", {"id": "msg_div_msg"})
 
@@ -133,22 +135,24 @@ while True:
 
 			izlaidumaGadsCrude = specs[izlaidumaGadsIndex:motoraTilpumsIndex]
 			izlaidumaGadsText = izlaidumaGadsCrude.replace('Izlaiduma gads:', '')
-			izlaidumaGadsText = int(izlaidumaGadsText)
+			izlaidumaGadsInt = int(izlaidumaGadsText)
 
 			motoraTilpumsCrude = specs[motoraTilpumsIndex:cenaIndex]
 			motoraTilpumsText = int(motoraTilpumsCrude.replace('Motora tilpums, cm3:', ''))
 
 			cenaCrude = specs[cenaIndex:]
 			cenaText = cenaCrude.replace('Cena:', '')
-			cenaText = cenaText.replace(' €', '')
+			cenaText = cenaText.replace(' €Aprēķināt apdrošināšanu', '')
 			cenaText = cenaText.replace(' ', '')
 			cenaText = float(cenaText)
 			cenaText = int(round(cenaText))
 			
 			specs = specs[:markaIndex] + ''
+			specs_short = specs[:295]
+			print(f"pic: {len(kopaBildes)}")
 
 			statusLink = 1
-			datums = date.today().strftime('%d/%m/%Y')
+			datums = date.today().strftime('%Y-%m-%d')
 			iforstingnumber=iforstingnumber+1
 			stringvalue_doctext1 = f'{uniqueNumber}'
 			
@@ -156,23 +160,7 @@ while True:
 
 			#saliek datus prieks SQLun nosuta uz funkciju kas izpilda SQL sutisanu
 
-			doc_ref = db.collection(u'SSmoto').document(stringvalue_doctext1)
-			doc_ref.set({
-
-			    'NO_ID' : uniqueNumber, 
-				'DATE' : datums,
- 				'STATUS' : 'true',
- 				'LINK' : links,
- 				'TEXT' : specs,
- 				'MARK' : markaText,
- 				'MODEL' : modelisText,
- 				'YEAR' : izlaidumaGadsText,
- 				'SIZE' : motoraTilpumsText,
- 				'PRICE' : cenaText,
- 				'IMPORT_DATE' : ievietosanasDatums,
- 				'UNIQUE_VISITS' : counterLink1,
- 				'PICTURE_LINKS' : kopaBildes
-			})
+			
 
 			myJSON1 = {
 	
@@ -183,11 +171,26 @@ while True:
  				'TEXT' : specs,
  				'MARK' : markaText,
  				'MODEL' : modelisText,
- 				'YEAR' : izlaidumaGadsText,
+ 				'YEAR' : izlaidumaGadsInt,
  				'SIZE' : motoraTilpumsText,
  				'PRICE' : cenaText,
  				'IMPORT_DATE' : ievietosanasDatums,
- 				'UNIQUE_VISITS' : counterLink1,
+ 				'UNIQUE_VISITS' : counterNumber,
  				'PICTURE_LINKS' : kopaBildes
 			}
+			
+
+			
+
+			mycursor = mydb.cursor()
+		
+			sql = f'INSERT INTO Jamaha (NO_ID, DATE, MARK) VALUES ("{uniqueNumber}","{datums}","Jamaha");'
+			print(f"{sql}")
+			mycursor.execute(sql)
+			mydb.commit()
+			print(mycursor.rowcount, "record inserted.")
+			
+
+
+			#print(myJSON1)
 	break
