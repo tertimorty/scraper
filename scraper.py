@@ -108,13 +108,15 @@ while True:
 					kopaBildes += f", {str(each.a['href'])}"
 
 			ievietosanasDatumsHTML = page_soup2.findAll("td", {"class": "msg_footer"})
-
-
+ 
 			ievietosanasDatums = ievietosanasDatumsHTML[2].text
 			ievietosanasDatums = ievietosanasDatums.strip().replace('Datums: ','')
 
 			ievietosanasDatums = ievietosanasDatums[0:10]
-			print(ievietosanasDatums)
+			print(f"ievietosanas datums: {ievietosanasDatums}")
+			ievietosanasDatums = ievietosanasDatums[6:]+"-"+ievietosanasDatums[3:5]+"-"+ievietosanasDatums[0:2]
+
+			print(f"ievietosanas datums: {ievietosanasDatums}")
 
 			specifics = page_soup2.find("div", {"id": "msg_div_msg"})
 
@@ -138,7 +140,7 @@ while True:
 			izlaidumaGadsInt = int(izlaidumaGadsText)
 
 			motoraTilpumsCrude = specs[motoraTilpumsIndex:cenaIndex]
-			motoraTilpumsText = int(motoraTilpumsCrude.replace('Motora tilpums, cm3:', ''))
+			motoraTilpumsInt = int(motoraTilpumsCrude.replace('Motora tilpums, cm3:', ''))
 
 			cenaCrude = specs[cenaIndex:]
 			cenaText = cenaCrude.replace('Cena:', '')
@@ -148,14 +150,15 @@ while True:
 			cenaText = int(round(cenaText))
 			
 			specs = specs[:markaIndex] + ''
-			specs_short = specs[:295]
-			print(f"pic: {len(kopaBildes)}")
+			specs_short = specs[:540]
+			specs_short = specs_short.replace(",","/,")
+			specs_short = specs_short.replace('"', '^')
+			print(f"specs_short: {len(specs_short)}")
 
 			statusLink = 1
 			datums = date.today().strftime('%Y-%m-%d')
 			iforstingnumber=iforstingnumber+1
 			stringvalue_doctext1 = f'{uniqueNumber}'
-			
 
 
 			#saliek datus prieks SQLun nosuta uz funkciju kas izpilda SQL sutisanu
@@ -165,26 +168,29 @@ while True:
 			myJSON1 = {
 	
 				'NO_ID' : uniqueNumber, 
-				'DATE' : datums,
- 				'STATUS' : 'true',
- 				'LINK' : links,
- 				'TEXT' : specs,
+				'INSERT_DATE' : datums,
+ 				'CURENT_STATUS' : 1,
+ 				'FIND_LINK' : links,
+ 				'CONTENTS_TEXT' : specs_short,
  				'MARK' : markaText,
  				'MODEL' : modelisText,
  				'YEAR' : izlaidumaGadsInt,
- 				'SIZE' : motoraTilpumsText,
+ 				'ENGINE_SIZE' : motoraTilpumsInt,
  				'PRICE' : cenaText,
  				'IMPORT_DATE' : ievietosanasDatums,
  				'UNIQUE_VISITS' : counterNumber,
  				'PICTURE_LINKS' : kopaBildes
-			}
-			
-
+			}	
 			
 
 			mycursor = mydb.cursor()
 		
-			sql = f'INSERT INTO Jamaha (NO_ID, DATE, MARK) VALUES ("{uniqueNumber}","{datums}","Jamaha");'
+			sql = f'INSERT INTO Jamaha1 ( \
+				NO_ID, INSERT_DATE, CURENT_STATUS, FIND_LINK, CONTENTS_TEXT, MARK, MODEL, YEAR_CREATED, \
+				ENGINE_SIZE, PRICE, IMPORT_DATE, UNIQUE_VISITS, PICTURE_LINKS)  \
+			VALUES ("{uniqueNumber}","{datums}",1,"{links}","{specs_short}","{markaText}","{modelisText}" \
+				,"{izlaidumaGadsInt}","{motoraTilpumsInt}","{cenaText}","{ievietosanasDatums}","{counterNumber}", \
+					"{kopaBildes}");'
 			print(f"{sql}")
 			mycursor.execute(sql)
 			mydb.commit()
@@ -193,4 +199,6 @@ while True:
 
 
 			#print(myJSON1)
+	print(Fore.GREEN + f'FINISHED WORKING')
 	break
+
