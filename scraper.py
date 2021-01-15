@@ -1,15 +1,11 @@
 
 ### this is file with mysql database
 ### 
-import firebase_admin
 import mysql.connector
-from firebase_admin import credentials
-from firebase_admin import firestore
 import requests
 from urllib.request import urlopen as uReq
 from bs4 import BeautifulSoup as soup
 from colorama import *
-import datetime
 from datetime import *
 
 import time 
@@ -33,7 +29,7 @@ while True:
 
 	my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/honda/sell/'
 	
-	uClient = uReq(my_url) 
+	uClient =  uReq(my_url) 
 	page_html = uClient.read()
 	uClient.close()
 	page_soup = soup(page_html, "html.parser")
