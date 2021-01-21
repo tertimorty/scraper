@@ -1,13 +1,10 @@
-
-### this is file with mysql database
-### 
+### this is file collects data to local mysql database ### 
 import mysql.connector
 import requests
 from urllib.request import urlopen as uReq
 from bs4 import BeautifulSoup as soup
 from colorama import *
 from datetime import *
-
 import time 
 
 mydb = mysql.connector.connect(
@@ -17,18 +14,15 @@ mydb = mysql.connector.connect(
 			database="testschema"
 			)
 print(Fore.YELLOW + "Starting your application For data" + Style.RESET_ALL)
-
-
-
-
-
-iforstingnumber=1
-
+motonamelist = ['yamaha']
+for each in motonamelist:
+	print(f'{each}')
+	motoname = each
 # starting data mining from web for first time
 while True:
 
-	my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/honda/sell/'
-	
+	my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/{motoname}/sell/'
+	print(my_url)
 	uClient =  uReq(my_url) 
 	page_html = uClient.read()
 	uClient.close()
@@ -38,7 +32,7 @@ while True:
 	pageCount = page_soup.find("a", {"class": "navi"})
 	pageCountLink = str(pageCount['href'])
 	#print(f'pagecount link {pageCountLink}')
-	pageCount = pageCountLink.replace('/lv/transport/moto-transport/motorcycles/honda/sell/page','')
+	pageCount = pageCountLink.replace(f'/lv/transport/moto-transport/motorcycles/{motoname}/sell/page','')
 	#print(f'page count {pageCount}')
 	pageCount = int(pageCount.replace('.html','').strip())
 	print(f'pageCount {pageCount}')
@@ -46,7 +40,7 @@ while True:
 	z = 1
 	while z <= pageCount: #pageCount
 		
-		my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/honda/sell/page{z}.html'
+		my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/{motoname}/sell/page{z}.html'
 		uClient = uReq(my_url) 
 		page_html = uClient.read()
 		uClient.close()
@@ -136,7 +130,10 @@ while True:
 			izlaidumaGadsInt = int(izlaidumaGadsText)
 
 			motoraTilpumsCrude = specs[motoraTilpumsIndex:cenaIndex]
-			motoraTilpumsInt = int(motoraTilpumsCrude.replace('Motora tilpums, cm3:', ''))
+			motoraTilpumsInt = float(motoraTilpumsCrude.replace('Motora tilpums, cm3:', ''))
+			motoraTilpumsInt = round(motoraTilpumsInt,0)
+			motoraTilpumsInt=int(motoraTilpumsInt)
+			
 
 			cenaCrude = specs[cenaIndex:]
 			cenaText = cenaCrude.replace('Cena:', '')
@@ -153,7 +150,6 @@ while True:
 
 			statusLink = 1
 			datums = date.today().strftime('%Y-%m-%d')
-			iforstingnumber=iforstingnumber+1
 			stringvalue_doctext1 = f'{uniqueNumber}'
 
 
@@ -178,21 +174,6 @@ while True:
  				'PICTURE_LINKS' : kopaBildes
 			}	
 			
-
-			mycursor = mydb.cursor()
-		
-			sql = f'INSERT INTO Jamaha1 ( \
-				NO_ID, INSERT_DATE, CURENT_STATUS, FIND_LINK, CONTENTS_TEXT, MARK, MODEL, YEAR_CREATED, \
-				ENGINE_SIZE, PRICE, IMPORT_DATE, UNIQUE_VISITS, PICTURE_LINKS)  \
-			VALUES ("{uniqueNumber}","{datums}",1,"{links}","{specs_short}","{markaText}","{modelisText}" \
-				,"{izlaidumaGadsInt}","{motoraTilpumsInt}","{cenaText}","{ievietosanasDatums}","{counterNumber}", \
-					"{kopaBildes}");'
-			print(f"{sql}")
-			mycursor.execute(sql)
-			mydb.commit()
-			print(mycursor.rowcount, "record inserted.")
-			
-
 
 			#print(myJSON1)
 	print(Fore.GREEN + f'FINISHED WORKING')
