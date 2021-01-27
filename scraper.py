@@ -1,4 +1,4 @@
-### this is file collects data to local mysql database ### 
+### this file collects data to local mysql database in seperate tables ### 
 import mysql.connector
 import requests
 from urllib.request import urlopen as uReq
@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup as soup
 from colorama import *
 from datetime import *
 import time 
-import test
+import test # test is the file where login information for database is kept
 print(test.user)
 mydb = mysql.connector.connect(
 			host=test.host,
@@ -66,19 +66,14 @@ for each in motonamelist:
 			headLink = page_soup2.find('script',{'id':'contacts_js'})
 			#print(f"statslink: {headLink} /n")
 
-			#'seit ir veiktas kautkadas izaminas datubazee no kuras iegust informacioju'
+			#this is workaround to get unique visits information, since it needs cookie
 			statsLink = f'https://www.ss.com{str(headLink["src"])}'
-			#print(f"clean stats link: {statsLink} /n")
 			cookies = dict(sid='000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
 			r = requests.get(statsLink, cookies=cookies)
 			counterLink1 = r.text
-
-
-			#print(Fore.CYAN + f'counterlink {counterLink1}'+ Style.RESET_ALL)
-			
+			#extracting and formating unique visits information
 			counterList_2 = counterLink1.split(";")	
 			counter_for_link = counterLink1.index(';')
-			#print(f"counter is: {counter_for_link}")
 			counterLink1 = counterLink1[ :counter_for_link]
 			counterList = counterLink1.split(",")
 			counterName = counterList[4]
@@ -88,10 +83,8 @@ for each in motonamelist:
 			counter_name_2 = counter_name_2.replace('OPEN_STAT_LNK="','')
 			counter_name_2 = counter_name_2.replace('="','')
 			uniqueNumber = counter_name_2
-			#print(Fore.GREEN + f'counter_name_2 {counter_name_2}'+ Style.RESET_ALL)
 
-
-
+			# extracting pictures links information and putting all links in one string
 			bildesLinksHTML = page_soup2.findAll("div", {"class": "pic_dv_thumbnail"})
 
 			kopaBildes = ''
@@ -99,19 +92,15 @@ for each in motonamelist:
 				for each in bildesLinksHTML:
 					kopaBildes += f", {str(each.a['href'])}"
 
+			#extracting date when informatin is inserted in webpage
 			ievietosanasDatumsHTML = page_soup2.findAll("td", {"class": "msg_footer"})
- 
 			ievietosanasDatums = ievietosanasDatumsHTML[2].text
 			ievietosanasDatums = ievietosanasDatums.strip().replace('Datums: ','')
-
 			ievietosanasDatums = ievietosanasDatums[0:10]
-			#print(f"ievietosanas datums: {ievietosanasDatums}")
 			ievietosanasDatums = ievietosanasDatums[6:]+"-"+ievietosanasDatums[3:5]+"-"+ievietosanasDatums[0:2]
 
-			#print(f"ievietosanas datums: {ievietosanasDatums}")
-
+			#extracting model, type, price, etc. information
 			specifics = page_soup2.find("div", {"id": "msg_div_msg"})
-
 			specs = specifics.text
 			specs = specs.strip()
 			specs = specs.replace('Aprēķināt apdrošināšanu OCTA.LV','')
@@ -150,16 +139,9 @@ for each in motonamelist:
 			specs_short = specs[:540]
 			specs_short = specs_short.replace(",","/,")
 			specs_short = specs_short.replace('"', '^')
-			#print(f"specs_short: {len(specs_short)}")
 
-			statusLink = 1
 			datums = date.today().strftime('%Y-%m-%d')
-			stringvalue_doctext1 = f'{uniqueNumber}'
 
-
-			#saliek datus prieks SQLun nosuta uz funkciju kas izpilda SQL sutisanu
-
-			
 
 			myJSON1 = {
 	
