@@ -6,20 +6,22 @@ from bs4 import BeautifulSoup as soup
 from colorama import *
 from datetime import *
 import time 
-
+import test
+print(test.user)
 mydb = mysql.connector.connect(
-			host="127.0.0.2",
-			user="root",
-			password="Lazanjavirs1",
-			database="testschema"
+			host=test.host,
+			user=test.user,
+			password=test.password,
+			database=test.database
 			)
 print(Fore.YELLOW + "Starting your application For data" + Style.RESET_ALL)
-motonamelist = ['yamaha']
+motonamelist = ['yamaha','honda']
+
+	
+# starting data mining from web for first time
 for each in motonamelist:
 	print(f'{each}')
 	motoname = each
-# starting data mining from web for first time
-while True:
 
 	my_url = f'https://www.ss.com/lv/transport/moto-transport/motorcycles/{motoname}/sell/'
 	print(my_url)
@@ -64,7 +66,7 @@ while True:
 			headLink = page_soup2.find('script',{'id':'contacts_js'})
 			#print(f"statslink: {headLink} /n")
 
-#'seit ir veiktas kautkadas izaminas datubazee no kuras iegust informacioju'
+			#'seit ir veiktas kautkadas izaminas datubazee no kuras iegust informacioju'
 			statsLink = f'https://www.ss.com{str(headLink["src"])}'
 			#print(f"clean stats link: {statsLink} /n")
 			cookies = dict(sid='000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')
@@ -103,10 +105,10 @@ while True:
 			ievietosanasDatums = ievietosanasDatums.strip().replace('Datums: ','')
 
 			ievietosanasDatums = ievietosanasDatums[0:10]
-			print(f"ievietosanas datums: {ievietosanasDatums}")
+			#print(f"ievietosanas datums: {ievietosanasDatums}")
 			ievietosanasDatums = ievietosanasDatums[6:]+"-"+ievietosanasDatums[3:5]+"-"+ievietosanasDatums[0:2]
 
-			print(f"ievietosanas datums: {ievietosanasDatums}")
+			#print(f"ievietosanas datums: {ievietosanasDatums}")
 
 			specifics = page_soup2.find("div", {"id": "msg_div_msg"})
 
@@ -124,6 +126,8 @@ while True:
 
 			modelisCrude = specs[modelisIndex:izlaidumaGadsIndex]
 			modelisText = modelisCrude.replace('Modelis:', '')
+			modelisText = modelisText[:20]
+
 
 			izlaidumaGadsCrude = specs[izlaidumaGadsIndex:motoraTilpumsIndex]
 			izlaidumaGadsText = izlaidumaGadsCrude.replace('Izlaiduma gads:', '')
@@ -146,7 +150,7 @@ while True:
 			specs_short = specs[:540]
 			specs_short = specs_short.replace(",","/,")
 			specs_short = specs_short.replace('"', '^')
-			print(f"specs_short: {len(specs_short)}")
+			#print(f"specs_short: {len(specs_short)}")
 
 			statusLink = 1
 			datums = date.today().strftime('%Y-%m-%d')
@@ -173,9 +177,24 @@ while True:
  				'UNIQUE_VISITS' : counterNumber,
  				'PICTURE_LINKS' : kopaBildes
 			}	
-			
+			mycursor = mydb.cursor()
+		
+			sql = f'INSERT INTO {motoname} ( \
+				NO_ID, INSERT_DATE, CURENT_STATUS, FIND_LINK, CONTENTS_TEXT, MARK, MODEL, YEAR_CREATED, \
+				ENGINE_SIZE, PRICE, IMPORT_DATE, UNIQUE_VISITS, PICTURE_LINKS)  \
+			VALUES ("{uniqueNumber}","{datums}",1,"{links}","{specs_short}","{markaText}","{modelisText}" \
+				,"{izlaidumaGadsInt}","{motoraTilpumsInt}","{cenaText}","{ievietosanasDatums}","{counterNumber}", \
+					"{kopaBildes}");'
+			#print(f"{sql}")
+			mycursor.execute(sql)
+			mydb.commit()
+			print(mycursor.rowcount, "record inserted.")
 
-			#print(myJSON1)
-	print(Fore.GREEN + f'FINISHED WORKING')
-	break
+
+	print(Fore.YELLOW + f'FINISHED WORKING WITH: {motoname}' + Style.RESET_ALL)	
+print(Fore.GREEN + f'FINISHED WORKING' + Style.RESET_ALL)
+	
+
+
+
 
