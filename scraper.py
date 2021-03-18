@@ -117,7 +117,6 @@ for each in motonamelist:
 			modelisText = modelisCrude.replace('Modelis:', '')
 			modelisText = modelisText[:20]
 
-
 			izlaidumaGadsCrude = specs[izlaidumaGadsIndex:motoraTilpumsIndex]
 			izlaidumaGadsText = izlaidumaGadsCrude.replace('Izlaiduma gads:', '')
 			izlaidumaGadsInt = int(izlaidumaGadsText)
@@ -136,7 +135,7 @@ for each in motonamelist:
 			cenaText = int(round(cenaText))
 			
 			specs = specs[:markaIndex] + ''
-			specs_short = specs[:540]
+			specs_short = specs[:520]
 			specs_short = specs_short.replace(",","/,")
 			specs_short = specs_short.replace('"', '^')
 
@@ -172,11 +171,6 @@ for each in motonamelist:
 			mydb.commit()
 			print(mycursor.rowcount, "record inserted.")
 
-
 	print(Fore.YELLOW + f'FINISHED WORKING WITH: {motoname}' + Style.RESET_ALL)	
 print(Fore.GREEN + f'FINISHED WORKING' + Style.RESET_ALL)
-	
-
-
-
 
