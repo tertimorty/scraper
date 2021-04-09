@@ -1,23 +1,59 @@
 ### this file collects data to local mysql database in seperate tables ### 
-import mysql.connector
 import requests
 from urllib.request import urlopen as uReq
 from bs4 import BeautifulSoup as soup
 from colorama import *
 from datetime import *
 import time 
-import test # test is the file where login information for database is kept
-print(test.user)
-mydb = mysql.connector.connect(
-			host=test.host,
-			user=test.user,
-			password=test.password,
-			database=test.database
-			)
-print(Fore.YELLOW + "Starting your application For data" + Style.RESET_ALL)
-motonamelist = ['yamaha','honda']
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+from firebase_admin import storage
+from random import randint
 
-	
+
+cred = credentials.Certificate("./test-moto-2021-firebase-adminsdk-9m1jp-13c9ebf445.json")
+firebase_admin.initialize_app(cred, { 'storageBucket' : 'test-moto-2021.appspot.com'})
+db = firestore.client()
+
+
+print(Fore.YELLOW + "Starting your application For data" + Style.RESET_ALL)
+motonamelist = ['iz','yamaha','honda','kawasaki','suzuki','harley-davidson','ktm','bmw',
+'jawa','husqvarna','aprilia','triumph','mash','ducati','gas','dnepr','minsk',
+'mondial','royal-enfield','ural','cz','tula','voshod','mv-agusta','swm',
+'benelli','victory','other']
+
+
+def isert_or_update_in_firestore(insertable_file):
+	'''If the file exists then its unique visits are updated, else it is created'''
+	my_j_2 = {'UNIQUE_VISITS':insertable_file['UNIQUE_VISITS'],
+				'UPDATE_DATE':insertable_file['UPDATE_DATE'],
+				}			
+	x= insertable_file['NO_ID']
+	doc_ref = db.collection(f'test-collection').document(f'{x}')
+	try:
+		doc_ref.create(insertable_file)
+		#this is for creating first picture.if there is none EVoRF1UQFlc
+		response = requests.get(first_pic)
+		readable_reponse1 = response.content
+		bucket = storage.bucket()
+		picture_name1 = uniqueNumber + '·jpg'
+		blob = bucket.blob(picture_name1)
+		blob.upload_from_string(readable_reponse1)
+
+	except:
+		doc_ref.update(my_j_2)
+		print(f'updated file: {x}')
+	return x
+
+
+def isert_in_visit_firestore(myJSON2,uniqueNumber):
+	doc_ref = db.collection(f'visits-collection').document(f'{uniqueNumber}')
+	try:
+		doc_ref.create(myJSON2)
+	except:
+		doc_ref.update(myJSON2)
+
 # starting data mining from web for first time
 for each in motonamelist:
 	print(f'{each}')
@@ -32,11 +68,15 @@ for each in motonamelist:
 	#print(f'{page_soup}')
 	
 	pageCount = page_soup.find("a", {"class": "navi"})
-	pageCountLink = str(pageCount['href'])
-	#print(f'pagecount link {pageCountLink}')
-	pageCount = pageCountLink.replace(f'/lv/transport/moto-transport/motorcycles/{motoname}/sell/page','')
-	#print(f'page count {pageCount}')
-	pageCount = int(pageCount.replace('.html','').strip())
+	try:
+		pageCountLink = str(pageCount['href'])
+	except:
+		pageCount = 1
+	else:
+		#print(f'pagecount link {pageCountLink}')
+		pageCount = pageCountLink.replace(f'/lv/transport/moto-transport/motorcycles/{motoname}/sell/page','')
+		#print(f'page count {pageCount}')
+		pageCount = int(pageCount.replace('.html','').strip())
 	print(f'pageCount {pageCount}')
 	superlist = []
 	z = 1
@@ -86,11 +126,13 @@ for each in motonamelist:
 
 			# extracting pictures links information and putting all links in one string
 			bildesLinksHTML = page_soup2.findAll("div", {"class": "pic_dv_thumbnail"})
-
-			kopaBildes = ''
+			kopaBildesCount = 0
+			first_pic = ''
 			if bildesLinksHTML != []:
-				for each in bildesLinksHTML:
-					kopaBildes += f", {str(each.a['href'])}"
+				kopaBildesCount = len(bildesLinksHTML)
+				# this part is for uploading first picture
+				first_pic = f"{str(bildesLinksHTML[0].a['href'])}"
+				
 
 			#extracting date when informatin is inserted in webpage
 			ievietosanasDatumsHTML = page_soup2.findAll("td", {"class": "msg_footer"})
@@ -115,7 +157,7 @@ for each in motonamelist:
 
 			modelisCrude = specs[modelisIndex:izlaidumaGadsIndex]
 			modelisText = modelisCrude.replace('Modelis:', '')
-			modelisText = modelisText[:20]
+			modelisText = modelisText
 
 			izlaidumaGadsCrude = specs[izlaidumaGadsIndex:motoraTilpumsIndex]
 			izlaidumaGadsText = izlaidumaGadsCrude.replace('Izlaiduma gads:', '')
@@ -135,7 +177,7 @@ for each in motonamelist:
 			cenaText = int(round(cenaText))
 			
 			specs = specs[:markaIndex] + ''
-			specs_short = specs[:520]
+			specs_short = specs
 			specs_short = specs_short.replace(",","/,")
 			specs_short = specs_short.replace('"', '^')
 
@@ -145,8 +187,8 @@ for each in motonamelist:
 			myJSON1 = {
 	
 				'NO_ID' : uniqueNumber, 
-				'INSERT_DATE' : datums,
- 				'CURENT_STATUS' : 1,
+				'UPDATE_DATE' : datums,
+ 				'VERSION' : 1,
  				'FIND_LINK' : links,
  				'CONTENTS_TEXT' : specs_short,
  				'MARK' : markaText,
@@ -154,22 +196,17 @@ for each in motonamelist:
  				'YEAR' : izlaidumaGadsInt,
  				'ENGINE_SIZE' : motoraTilpumsInt,
  				'PRICE' : cenaText,
- 				'IMPORT_DATE' : ievietosanasDatums,
+ 				'INSERT_DATE' : ievietosanasDatums,
  				'UNIQUE_VISITS' : counterNumber,
- 				'PICTURE_LINKS' : kopaBildes
-			}	
-			mycursor = mydb.cursor()
-		
-			sql = f'INSERT INTO {motoname} ( \
-				NO_ID, INSERT_DATE, CURENT_STATUS, FIND_LINK, CONTENTS_TEXT, MARK, MODEL, YEAR_CREATED, \
-				ENGINE_SIZE, PRICE, IMPORT_DATE, UNIQUE_VISITS, PICTURE_LINKS)  \
-			VALUES ("{uniqueNumber}","{datums}",1,"{links}","{specs_short}","{markaText}","{modelisText}" \
-				,"{izlaidumaGadsInt}","{motoraTilpumsInt}","{cenaText}","{ievietosanasDatums}","{counterNumber}", \
-					"{kopaBildes}");'
-			#print(f"{sql}")
-			mycursor.execute(sql)
-			mydb.commit()
-			print(mycursor.rowcount, "record inserted.")
+ 				'PICTURE_COUNT' : kopaBildesCount
+			}
+			myJSON2 = {
+				datums : counterNumber
+			}
+			isert_or_update_in_firestore(myJSON1)
+			isert_in_visit_firestore(myJSON2,uniqueNumber)
+			
+			print(f'NO_ID: {uniqueNumber}')
 
 	print(Fore.YELLOW + f'FINISHED WORKING WITH: {motoname}' + Style.RESET_ALL)	
 print(Fore.GREEN + f'FINISHED WORKING' + Style.RESET_ALL)
